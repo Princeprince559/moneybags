@@ -1,0 +1,12 @@
+# IDEs
+/.idea
+/.vscode
+
+# Rust
+.cargo/config
+/target
+**/*.rs.bk
+
+# Substrate
+*.log
+*.out
