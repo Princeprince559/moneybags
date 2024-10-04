@@ -1,0 +1,50 @@
+[workspace]
+
+members = [
+    "aggregator",
+    "bin/node",
+    "bin/runtime",
+    "clique",
+    "finality-aleph",
+    "pallets/aleph",
+    "pallets/elections",
+    "pallets/support",
+    "pallets/committee-management",
+    "poseidon",
+    "primitives",
+]
+
+exclude = [
+    "aleph-client",
+    "baby-liminal-extension",
+    "benches/payout-stakers",
+    "bin/cliain",
+    "bin/finalizer",
+    "contracts/access_control",
+    "contracts/adder",
+    "contracts/adder",
+    "contracts/button",
+    "contracts/game_token",
+    "contracts/marketplace",
+    "contracts/poseidon_host_bench",
+    "contracts/simple_dex",
+    "contracts/ticket_token",
+    "contracts/wrapped_azero",
+    "contracts/shared_traits",
+    "e2e-tests",
+    "flooder",
+    "fork-off",
+    "pallets/baby-liminal",
+    "relations",
+    "relations/src/proc_macro",
+    "scripts/synthetic-network/synthetic-link",
+]
+
+[profile.release]
+# Substrate runtime requires unwinding.
+panic = "unwind"
+
+[profile.production]
+inherits = "release"
+lto = true
+codegen-units = 1
