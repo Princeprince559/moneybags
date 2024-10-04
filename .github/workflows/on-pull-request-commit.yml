@@ -1,0 +1,51 @@
+---
+name: PR commit
+
+on:
+  merge_group:
+  pull_request:
+    branches:
+      - main
+      - 'release-*'
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  check-excluded-packages:
+    name: Check excluded packages
+    uses: ./.github/workflows/_check-excluded-packages.yml
+
+  code-formatting:
+    name: Check code formatting
+    uses: ./.github/workflows/_check-code-formatting.yml
+
+  unit-tests-and-static-checks:
+    name: Unit tests and clippy
+    uses: ./.github/workflows/_unit-tests-and-static-checks.yml
+
+  check-production-node-and-runtime:
+    name: Check production node and runtime
+    uses: ./.github/workflows/_check-production-node-and-runtime.yml
+
+  build-test-node-and-runtime:
+    name: Build test node and runtime
+    uses: ./.github/workflows/_build-test-node-and-runtime.yml
+
+  build-test-node-image-and-e2e-client-image:
+    needs: [build-test-node-and-runtime]
+    uses: ./.github/workflows/_build-test-node-and-e2e-client-image.yml
+
+  run-e2e-finalization-test:
+    name: Run e2e finalization test
+    needs: [build-test-node-image-and-e2e-client-image]
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Run e2e test
+        uses: ./.github/actions/run-e2e-test
+        with:
+          test-case: finalization::finalization
