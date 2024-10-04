@@ -1,0 +1,150 @@
+---
+name: 'Run e2e test'
+description: 'Run single e2e test.'
+
+inputs:
+  node-count:
+    description: 'Number of nodes to run.'
+    required: false
+    default: '5'
+  min-validator-count:
+    description: 'Minimum number of nodes below which chain enters emergency state.'
+    required: false
+    default: '4'
+  test-case:
+    description: 'Name of test to run.'
+    required: false
+  randomized:
+    description: 'Whether to use randomized test params.'
+    required: false
+    default: 'false'
+  reserved-seats:
+    description: 'Number of reserved seats available to validators.'
+    required: false
+  non-reserved-seats:
+    description: 'Number of non-reserved seats available to validators.'
+    required: false
+  follow-up-finalization-check:
+    description: 'Whether to run a follow-up finalization check.'
+    required: false
+  deploy-adder:
+    description: 'Whether to deploy the adder sample contract to the node.'
+    required: false
+    default: 'false'
+  clean-button:
+    description: 'Whether to remove the button game contracts after running test suite.'
+    required: false
+    default: 'false'
+  deploy-button:
+    description: 'Whether to deploy the button game contracts to the node.'
+    required: false
+    default: 'false'
+  image-path:
+    description: 'Custom path to docker image for aleph-node'
+    required: false
+    default: aleph-test-docker
+  node-image:
+    description: 'Custom name of aleph-node image'
+    required: false
+    default: aleph-node:latest
+  compose-file:
+    description: 'Custom docker-compose configuration'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+
+    - name: Download artifact with docker image
+      uses: actions/download-artifact@v2
+      with:
+        name: ${{ inputs.image-path }}
+
+    - name: Load node docker image
+      shell: bash
+      run: docker load -i aleph-node.tar
+
+    - name: Run consensus party
+      shell: bash
+      run: |
+        NODE_IMAGE=${{ inputs.node-image }} \
+        DOCKER_COMPOSE=${{ inputs.compose-file }} \
+          ./.github/scripts/run_consensus.sh \
+            -m ${{ inputs.min-validator-count }} -n ${{ inputs.node-count }}
+
+    - name: Sleep
+      shell: bash
+      run: sleep 60
+
+    - name: Display bootnode logs
+      shell: bash
+      run: docker logs Node0 --follow &
+
+    - name: Download artifact with the test suite image
+      if: inputs.test-case != ''
+      uses: actions/download-artifact@v2
+      with:
+        name: aleph-e2e-client
+
+    - name: Load test suite docker image
+      if: inputs.test-case != ''
+      shell: bash
+      run: docker load -i aleph-e2e-client.tar
+
+    - name: Run single e2e test
+      if: inputs.test-case != ''
+      shell: bash
+      run: |
+        ARGS=(
+          -t "${{ inputs.test-case }}"
+          -r "${{ inputs.randomized }}"
+          -m "${{ inputs.min-validator-count }}"
+        )
+
+        RESERVED_SEATS="${{ inputs.reserved-seats }}"
+        NON_RESERVED_SEATS="${{ inputs.non-reserved-seats }}"
+
+        if [[ -n "${RANDOMIZED}" ]]; then
+          ARGS+=(-r "${RANDOMIZED}")
+        fi
+
+        if [[ -n "${RESERVED_SEATS}" && -n "${NON_RESERVED_SEATS}" ]]; then
+          ARGS+=(
+            -f "${RESERVED_SEATS}"
+            -n "${NON_RESERVED_SEATS}"
+          )
+        fi
+
+        DEPLOY_ADDER="${{ inputs.deploy-adder }}"
+
+        if [[ "${DEPLOY_ADDER}" = "true" ]]; then
+          pushd contracts/adder
+          export ADDER=$(./deploy.sh)
+          popd
+        fi
+
+        DEPLOY_BUTTON="${{ inputs.deploy-button }}"
+
+        if [[ "${DEPLOY_BUTTON}" = "true" ]]; then
+          source contracts/env/dev
+          export LIFETIME=20
+          contracts/scripts/deploy.sh
+          source contracts/scripts/test_env
+        fi
+
+        ./.github/scripts/run_e2e_test.sh "${ARGS[@]}"
+
+        CLEAN_BUTTON="${{ inputs.clean-button }}"
+
+        if [[ "${CLEAN_BUTTON}" = "true" ]]; then
+          source contracts/env/dev
+          contracts/scripts/clean.sh
+        fi
+
+    - name: Run finalization e2e test
+      if: inputs.follow-up-finalization-check == 'true'
+      shell: bash
+      run: |
+        ./.github/scripts/run_e2e_test.sh \
+          -t finalization::finalization -m "${{ inputs.min-validator-count }}"
