@@ -1,0 +1,32 @@
+[workspace]
+
+members = [
+    "aggregator",
+    "bin/node",
+    "bin/runtime",
+    "finality-aleph",
+    "pallets/aleph",
+    "pallets/elections",
+    "pallets/support",
+    "primitives",
+]
+
+exclude = [
+  "flooder",
+  "e2e-tests",
+  "aleph-client",
+  "fork-off",
+  "benches/payout-stakers",
+  "bin/cliain",
+  "contracts/adder",
+  "scripts/synthetic-network/synthetic-link",
+]
+
+[profile.release]
+# Substrate runtime requires unwinding.
+panic = "unwind"
+
+[profile.production]
+inherits = "release"
+lto = true
+codegen-units = 1
