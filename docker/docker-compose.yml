@@ -1,0 +1,61 @@
+services:
+  Node0:
+    extends:
+      file: docker-compose.base.yml
+      service: Node0
+    network_mode: host
+
+  Node1:
+    extends:
+      file: docker-compose.base.yml
+      service: Node1
+    network_mode: host
+
+  Node2:
+    extends:
+      file: docker-compose.base.yml
+      service: Node2
+    network_mode: host
+
+  Node3:
+    extends:
+      file: docker-compose.base.yml
+      service: Node3
+    network_mode: host
+
+  Node4:
+    extends:
+      file: docker-compose.base.yml
+      service: Node4
+    network_mode: host
+
+  Node5:
+    extends:
+      file: docker-compose.base.yml
+      service: Node5
+    network_mode: host
+
+  Node6:
+    extends:
+      file: docker-compose.base.yml
+      service: Node6
+    network_mode: host
+
+  Node7:
+    extends:
+      file: docker-compose.base.yml
+      service: Node7
+    network_mode: host
+
+  Node8:
+    extends:
+      file: docker-compose.base.yml
+      service: Node8
+    network_mode: host
+
+  Node9:
+    extends:
+      file: docker-compose.base.yml
+      service: Node9
+    network_mode: host
+
