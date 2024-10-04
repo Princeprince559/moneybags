@@ -1,0 +1,71 @@
+---
+name: Get docker image names
+description:
+  Returns
+    1) public ECR image names for release candidate image and deploy image
+    2) public DockerHub image names for Testnet and Mainnet
+  based on the current git HEAD. This action is intended to run only when tag was source of
+  trigger (ie tag push)
+inputs:
+  ecr-repo:
+    required: true
+    description: URL to public aleph-node repo in ECR
+  dockerhub-repo:
+    required: true
+    description: URL to public aleph-node repo in DockerHub
+outputs:
+  ecr-rc-image:
+    description: ECR release candidate image name
+    value: ${{ steps.get-docker-image-names.outputs.ecr-rc-image }}
+  ecr-deploy-image:
+    description: ECR deploy image name
+    value: ${{ steps.get-docker-image-names.outputs.ecr-deploy-image }}
+  dockerhub-testnet-image:
+    description: DockerHub Testnet docker image name
+    value: ${{ steps.get-docker-image-names.outputs.dockerhub-testnet-image }}
+  dockerhub-mainnet-image:
+    description: DockerHub Mainnet docker image name
+    value: ${{ steps.get-docker-image-names.outputs.dockerhub-mainnet-image }}
+  dockerhub-testnet-latest-image:
+    description: DockerHub Testnet docker image name
+    value: ${{ steps.get-docker-image-names.outputs.dockerhub-testnet-latest-image }}
+  dockerhub-mainnet-latest-image:
+    description: DockerHub Mainnet docker image name
+    value: ${{ steps.get-docker-image-names.outputs.dockerhub-mainnet-latest-image }}
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout source code
+      uses: actions/checkout@v3
+
+    - name: Call action get-ref-properties
+      id: get-ref-properties
+      # yamllint disable-line rule:line-length
+      uses: Cardinal-Cryptography/github-actions/get-ref-properties@v1
+
+    - name: Check if tag push was a trigger
+      shell: bash
+      run: |
+        if [[ -z '${{ steps.get-ref-properties.outputs.tag }}' ]]; then
+          echo 'Error: did you forgot to run this workflow from tag?'
+          echo 'Instead, it was run from branch ${{ steps.get-ref-properties.outputs.branch }}'
+          exit 1
+        fi
+
+    - name: Get node image names
+      id: get-docker-image-names
+      shell: bash
+      env:
+        COMMIT_SHA: ${{ steps.get-ref-properties.outputs.sha }}
+        COMMIT_TAG: ${{ steps.get-ref-properties.outputs.tag }}
+        ECR: ${{ inputs.ecr-repo }}
+        DOCKERHUB: ${{ inputs.dockerhub-repo }}
+      # yamllint disable rule:line-length
+      run: |
+        echo 'ecr-rc-image=${{ env.ECR }}:${{ env.COMMIT_SHA }}' >> $GITHUB_OUTPUT
+        echo 'ecr-deploy-image=${{ env.ECR }}:${{ env.COMMIT_TAG }}' >> $GITHUB_OUTPUT
+        echo 'dockerhub-testnet-image=${{ env.DOCKERHUB }}:testnet-${{ env.COMMIT_TAG }}' >> $GITHUB_OUTPUT
+        echo 'dockerhub-mainnet-image=${{ env.DOCKERHUB }}:mainnet-${{ env.COMMIT_TAG }}' >> $GITHUB_OUTPUT
+        echo 'dockerhub-testnet-latest-image=${{ env.DOCKERHUB }}:testnet-latest' >> $GITHUB_OUTPUT
+        echo 'dockerhub-mainnet-latest-image=${{ env.DOCKERHUB }}:mainnet-latest' >> $GITHUB_OUTPUT
