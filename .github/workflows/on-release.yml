@@ -60,7 +60,7 @@ jobs:
              'aleph-node-${{ steps.get-ref-properties.outputs.sha }}-linux-amd64.tar.gz'
 
       - name: Add runtime and binary to the release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             aleph-runtime-${{ steps.get-ref-properties.outputs.sha }}.tar.gz
